@@ -1,14 +1,15 @@
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.*;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import java.util.zip.DataFormatException;
-import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
 
 public class GitBlob implements Comparable<GitBlob> {
     private static final Pattern GIT_OBJECT = Pattern.compile(".*[/\\\\]\\.git[/\\\\]objects[/\\\\][0-9a-f]{2}[/\\\\][0-9a-f]{38}");
@@ -39,18 +40,11 @@ public class GitBlob implements Comparable<GitBlob> {
     }
 
     private static GitBlob gitBlobOrNull(Path path) {
-        try {
-            FileInputStream inputStream = new FileInputStream(path.toFile());
-            byte[] zipped = new byte[4096]; // NTFS cluster size
-            inputStream.read(zipped);
-
-            Inflater inflater = new Inflater();
-            inflater.setInput(zipped);
-
+        try (InputStream inputStream = new InflaterInputStream(new FileInputStream(path.toFile()))) {
             byte[] header = new byte[16]; // "blob 2147483647\0"
-            inflater.inflate(header);
+            inputStream.read(header);
             return isBlobHeader(header) ? parseBlobHeader(path, header) : null;
-        } catch (IOException | DataFormatException ex) {
+        } catch (IOException ex) {
             return null;
         }
     }
@@ -78,16 +72,15 @@ public class GitBlob implements Comparable<GitBlob> {
     }
 
     public byte[] unzip() throws IOException {
-        try {
-            byte[] zipped = Files.readAllBytes(path);
-            Inflater inflater = new Inflater();
-            inflater.setInput(zipped);
-
+        try (InputStream inputStream = new InflaterInputStream(new FileInputStream(path.toFile()))) {
             byte[] unzipped = new byte[payloadStart + payloadSize];
-            inflater.inflate(unzipped);
+            int offset = 0;
+            int chunkSize = inputStream.read(unzipped);
+            while (chunkSize > 0) {
+                offset += chunkSize;
+                chunkSize = inputStream.read(unzipped, offset, unzipped.length - offset);
+            }
             return unzipped;
-        } catch (DataFormatException ex) {
-            throw new IOException(ex);
         }
     }
 
