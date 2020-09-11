@@ -1,6 +1,5 @@
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -92,8 +91,8 @@ public class GitBlob implements Comparable<GitBlob> {
         }
     }
 
-    public String payloadAsUtf8() throws IOException {
-        return new String(unzip(), payloadStart, payloadSize, StandardCharsets.UTF_8);
+    public String payload() throws IOException {
+        return Unicode.decodeHeuristically(unzip(), payloadStart, payloadSize);
     }
 
     @Override

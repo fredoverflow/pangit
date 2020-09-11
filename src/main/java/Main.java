@@ -58,7 +58,7 @@ public class Main {
                 GitBlob gitBlob = gitBlobs.getSelectedValue();
                 frame.setTitle(gitBlob.path.toString());
                 try {
-                    payload.setText(gitBlob.payloadAsUtf8());
+                    payload.setText(gitBlob.payload());
                 } catch (IOException ex) {
                     payload.setText(ex.toString());
                 }
