@@ -163,14 +163,13 @@ public class Unicode {
                 case 0xdd:
                 case 0xde:
                 case 0xdf:
-                    // pairs
+                    // pair
                     if (i + 1 >= bytes.length ||
                             (bytes[i + 1] & 0xc0) != 0x80)
                         return latin1_binary(bytes, start, i + 1);
                     i += 1;
                     break;
 
-                case 0xe0:
                 case 0xe1:
                 case 0xe2:
                 case 0xe3:
@@ -183,27 +182,70 @@ public class Unicode {
                 case 0xea:
                 case 0xeb:
                 case 0xec:
-                case 0xed:
                 case 0xee:
                 case 0xef:
-                    // triplets
+                    // triplet
                     if (i + 2 >= bytes.length ||
                             (bytes[i + 1] & 0xc0) != 0x80 ||
                             (bytes[i + 2] & 0xc0) != 0x80)
                         return latin1_binary(bytes, start, i + 1);
                     i += 2;
                     break;
+                case 0xe0:
+                    // triplet, possibly overlong encoding
+                    if (i + 2 >= bytes.length ||
+                            (bytes[i + 1] & 0xc0) != 0x80 ||
+                            (bytes[i + 2] & 0xc0) != 0x80 ||
+                            // 0800 = 0000 100000 000000
+                            //           & 1
+                            (bytes[i + 1] & 0x20) == 0) // overlong encoding
+                        return latin1_binary(bytes, start, i + 1);
+                    i += 2;
+                    break;
+                case 0xed:
+                    // triplet, possibly surrogate half
+                    if (i + 2 >= bytes.length ||
+                            (bytes[i + 1] & 0xc0) != 0x80 ||
+                            (bytes[i + 2] & 0xc0) != 0x80 ||
+                            // d800 = 1101 100000 000000
+                            //           & 1
+                            (bytes[i + 1] & 0x20) != 0) // surrogate half
+                        return latin1_binary(bytes, start, i + 1);
+                    i += 2;
+                    break;
 
-                case 0xf0:
                 case 0xf1:
                 case 0xf2:
                 case 0xf3:
-                case 0xf4:
-                    // quadruplets
+                    // quadruplet
                     if (i + 3 >= bytes.length ||
                             (bytes[i + 1] & 0xc0) != 0x80 ||
                             (bytes[i + 2] & 0xc0) != 0x80 ||
                             (bytes[i + 3] & 0xc0) != 0x80)
+                        return latin1_binary(bytes, start, i + 1);
+                    i += 3;
+                    break;
+                case 0xf0:
+                    // quadruplet, possibly overlong encoding
+                    if (i + 3 >= bytes.length ||
+                            (bytes[i + 1] & 0xc0) != 0x80 ||
+                            (bytes[i + 2] & 0xc0) != 0x80 ||
+                            (bytes[i + 3] & 0xc0) != 0x80 ||
+                            // 10000 = 000 010000 000000 000000
+                            //           & 11
+                            (bytes[i + 1] & 0x30) == 0) // overlong encoding
+                        return latin1_binary(bytes, start, i + 1);
+                    i += 3;
+                    break;
+                case 0xf4:
+                    // quadruplet, possibly overflow
+                    if (i + 3 >= bytes.length ||
+                            (bytes[i + 1] & 0xc0) != 0x80 ||
+                            (bytes[i + 2] & 0xc0) != 0x80 ||
+                            (bytes[i + 3] & 0xc0) != 0x80 ||
+                            // 10FFFF = 100 001111 111111 111111
+                            //           && 11
+                            (bytes[i + 1] & 0x30) != 0) // overflow
                         return latin1_binary(bytes, start, i + 1);
                     i += 3;
                     break;
