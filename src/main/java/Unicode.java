@@ -132,35 +132,6 @@ public class Unicode {
                 case 0xff:
                     return latin1_binary(bytes, start);
 
-                case 0xf0:
-                case 0xf1:
-                case 0xf2:
-                case 0xf3:
-                case 0xf4:
-                    // quadruplets
-                    if (i + 1 >= bytes.length || (bytes[++i] & 0xc0) != 0x80)
-                        return latin1_binary(bytes, start);
-                    // intentional case fallthrough
-                case 0xe0:
-                case 0xe1:
-                case 0xe2:
-                case 0xe3:
-                case 0xe4:
-                case 0xe5:
-                case 0xe6:
-                case 0xe7:
-                case 0xe8:
-                case 0xe9:
-                case 0xea:
-                case 0xeb:
-                case 0xec:
-                case 0xed:
-                case 0xee:
-                case 0xef:
-                    // triplets
-                    if (i + 1 >= bytes.length || (bytes[++i] & 0xc0) != 0x80)
-                        return latin1_binary(bytes, start);
-                    // intentional case fallthrough
                 case 0xc2:
                 case 0xc3:
                 case 0xc4:
@@ -193,8 +164,49 @@ public class Unicode {
                 case 0xde:
                 case 0xdf:
                     // pairs
-                    if (i + 1 >= bytes.length || (bytes[++i] & 0xc0) != 0x80)
+                    if (i + 1 >= bytes.length ||
+                            (bytes[i + 1] & 0xc0) != 0x80)
                         return latin1_binary(bytes, start);
+                    i += 1;
+                    break;
+
+                case 0xe0:
+                case 0xe1:
+                case 0xe2:
+                case 0xe3:
+                case 0xe4:
+                case 0xe5:
+                case 0xe6:
+                case 0xe7:
+                case 0xe8:
+                case 0xe9:
+                case 0xea:
+                case 0xeb:
+                case 0xec:
+                case 0xed:
+                case 0xee:
+                case 0xef:
+                    // triplets
+                    if (i + 2 >= bytes.length ||
+                            (bytes[i + 1] & 0xc0) != 0x80 ||
+                            (bytes[i + 2] & 0xc0) != 0x80)
+                        return latin1_binary(bytes, start);
+                    i += 2;
+                    break;
+
+                case 0xf0:
+                case 0xf1:
+                case 0xf2:
+                case 0xf3:
+                case 0xf4:
+                    // quadruplets
+                    if (i + 3 >= bytes.length ||
+                            (bytes[i + 1] & 0xc0) != 0x80 ||
+                            (bytes[i + 2] & 0xc0) != 0x80 ||
+                            (bytes[i + 3] & 0xc0) != 0x80)
+                        return latin1_binary(bytes, start);
+                    i += 3;
+                    break;
             }
         }
         return new String(bytes, start, bytes.length - start, StandardCharsets.UTF_8);
