@@ -249,14 +249,13 @@ public class Unicode {
             output[o++] = ' ';
 
             for (int x = 0; x < 16 && i < bytes.length; ++x) {
-                int b = bytes[i++] & 255;
-                output[o++] = (byte) (isValidCharacter(b, VISIBLE_LATIN1) ? b : '.');
+                byte b = bytes[i++];
+                output[o++] = (32 <= b && b < 127 ? b : 46);
             }
             output[o++] = '\n';
         }
-        return new String(output, 0, o, StandardCharsets.ISO_8859_1);
+        return new String(output, 0, o, StandardCharsets.US_ASCII);
     }
 
     private static final String HEX_DIGITS = "0123456789abcdef";
-    private static final int[] VISIBLE_LATIN1 = {0, -1, -1, 0x7fffffff, 0, -1, -1, -1};
 }
