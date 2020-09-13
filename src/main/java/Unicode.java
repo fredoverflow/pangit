@@ -202,20 +202,81 @@ public class Unicode {
 
     private static String latin1_binary(byte[] bytes, int start) {
         for (int i = start; i < bytes.length; ++i) {
-            if (!isValidCharacter(bytes[i] & 255, LATIN1)) {
-                return hexdump(bytes, start);
+            switch (bytes[i] & 255) {
+                case 0x00:
+                case 0x01:
+                case 0x02:
+                case 0x03:
+                case 0x04:
+                case 0x05:
+                case 0x06:
+                case 0x07:
+                case 0x08:
+                    // \t
+                    // \n
+                case 0x0b:
+                case 0x0c:
+                    // \r
+                case 0x0e:
+                case 0x0f:
+
+                case 0x10:
+                case 0x11:
+                case 0x12:
+                case 0x13:
+                case 0x14:
+                case 0x15:
+                case 0x16:
+                case 0x17:
+                case 0x18:
+                case 0x19:
+                case 0x1a:
+                case 0x1b:
+                case 0x1c:
+                case 0x1d:
+                case 0x1e:
+                case 0x1f:
+
+                case 0x7f:
+
+                case 0x80:
+                case 0x81:
+                case 0x82:
+                case 0x83:
+                case 0x84:
+                case 0x85:
+                case 0x86:
+                case 0x87:
+                case 0x88:
+                case 0x89:
+                case 0x8a:
+                case 0x8b:
+                case 0x8c:
+                case 0x8d:
+                case 0x8e:
+                case 0x8f:
+
+                case 0x90:
+                case 0x91:
+                case 0x92:
+                case 0x93:
+                case 0x94:
+                case 0x95:
+                case 0x96:
+                case 0x97:
+                case 0x98:
+                case 0x99:
+                case 0x9a:
+                case 0x9b:
+                case 0x9c:
+                case 0x9d:
+                case 0x9e:
+                case 0x9f:
+                    return hexdump(bytes, start);
             }
         }
         return new String(bytes, start, bytes.length - start, StandardCharsets.ISO_8859_1);
     }
-
-    private static boolean isValidCharacter(int b, int[] valid) {
-        int outer = b >>> 5;
-        int inner = b & 31;
-        return ((valid[outer] >>> inner) & 1) != 0;
-    }
-
-    private static final int[] LATIN1 = {1 << '\r' | 1 << '\n' | 1 << '\t', -1, -1, 0x7fffffff, 0, -1, -1, -1};
 
     private static String hexdump(byte[] bytes, int start) {
         int i = start;
