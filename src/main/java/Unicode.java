@@ -4,12 +4,12 @@ public class Unicode {
     public static String decodeHeuristically(byte[] bytes, int start) {
         // https://en.wikipedia.org/wiki/UTF-8#Encoding
         // https://en.wikipedia.org/wiki/ISO/IEC_8859-1#Code_page_layout
-        return utf8_latin1_binary(bytes, start);
+        return utf8_latin1_binary(bytes, start, start);
         // TODO support UTF-16 https://en.wikipedia.org/wiki/Byte_order_mark
     }
 
-    private static String utf8_latin1_binary(byte[] bytes, int start) {
-        for (int i = start; i < bytes.length; ++i) {
+    private static String utf8_latin1_binary(byte[] bytes, int start, int i) {
+        for (; i < bytes.length; ++i) {
             switch (bytes[i] & 255) {
                 case 0x00:
                 case 0x01:
@@ -130,7 +130,7 @@ public class Unicode {
                 case 0xfd:
                 case 0xfe:
                 case 0xff:
-                    return latin1_binary(bytes, start);
+                    return latin1_binary(bytes, start, i + 1);
 
                 case 0xc2:
                 case 0xc3:
@@ -166,7 +166,7 @@ public class Unicode {
                     // pairs
                     if (i + 1 >= bytes.length ||
                             (bytes[i + 1] & 0xc0) != 0x80)
-                        return latin1_binary(bytes, start);
+                        return latin1_binary(bytes, start, i + 1);
                     i += 1;
                     break;
 
@@ -190,7 +190,7 @@ public class Unicode {
                     if (i + 2 >= bytes.length ||
                             (bytes[i + 1] & 0xc0) != 0x80 ||
                             (bytes[i + 2] & 0xc0) != 0x80)
-                        return latin1_binary(bytes, start);
+                        return latin1_binary(bytes, start, i + 1);
                     i += 2;
                     break;
 
@@ -204,7 +204,7 @@ public class Unicode {
                             (bytes[i + 1] & 0xc0) != 0x80 ||
                             (bytes[i + 2] & 0xc0) != 0x80 ||
                             (bytes[i + 3] & 0xc0) != 0x80)
-                        return latin1_binary(bytes, start);
+                        return latin1_binary(bytes, start, i + 1);
                     i += 3;
                     break;
             }
@@ -212,8 +212,8 @@ public class Unicode {
         return new String(bytes, start, bytes.length - start, StandardCharsets.UTF_8);
     }
 
-    private static String latin1_binary(byte[] bytes, int start) {
-        for (int i = start; i < bytes.length; ++i) {
+    private static String latin1_binary(byte[] bytes, int start, int i) {
+        for (; i < bytes.length; ++i) {
             switch (bytes[i] & 255) {
                 case 0x00:
                 case 0x01:
