@@ -85,7 +85,7 @@ public class GitBlob implements Comparable<GitBlob> {
     }
 
     public String payload() throws IOException {
-        return Unicode.decodeHeuristically(unzip(), payloadStart, payloadSize);
+        return Unicode.decodeHeuristically(unzip(), payloadStart);
     }
 
     @Override
