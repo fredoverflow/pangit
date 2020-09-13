@@ -10,53 +10,195 @@ public class Unicode {
 
     private static String utf8_latin1_binary(byte[] bytes, int start) {
         for (int i = start; i < bytes.length; ++i) {
-            int b = bytes[i] & 255;
-            switch (b >>> 3) {
-                case 0b00001:
-                    if (((RETURN_NEWLINE_TAB >>> b) & 1) != 0) continue;
-                    // intentional case fallthrough
-                case 0b00000:
-                case 0b00010:
-                case 0b00011:
+            switch (bytes[i] & 255) {
+                case 0x00:
+                case 0x01:
+                case 0x02:
+                case 0x03:
+                case 0x04:
+                case 0x05:
+                case 0x06:
+                case 0x07:
+                case 0x08:
+                    // \t
+                    // \n
+                case 0x0b:
+                case 0x0c:
+                    // \r
+                case 0x0e:
+                case 0x0f:
 
-                case 0b10000:
-                case 0b10001:
-                case 0b10010:
-                case 0b10011:
+                case 0x10:
+                case 0x11:
+                case 0x12:
+                case 0x13:
+                case 0x14:
+                case 0x15:
+                case 0x16:
+                case 0x17:
+                case 0x18:
+                case 0x19:
+                case 0x1a:
+                case 0x1b:
+                case 0x1c:
+                case 0x1d:
+                case 0x1e:
+                case 0x1f:
+
+                case 0x7f:
+
+                case 0x80:
+                case 0x81:
+                case 0x82:
+                case 0x83:
+                case 0x84:
+                case 0x85:
+                case 0x86:
+                case 0x87:
+                case 0x88:
+                case 0x89:
+                case 0x8a:
+                case 0x8b:
+                case 0x8c:
+                case 0x8d:
+                case 0x8e:
+                case 0x8f:
+
+                case 0x90:
+                case 0x91:
+                case 0x92:
+                case 0x93:
+                case 0x94:
+                case 0x95:
+                case 0x96:
+                case 0x97:
+                case 0x98:
+                case 0x99:
+                case 0x9a:
+                case 0x9b:
+                case 0x9c:
+                case 0x9d:
+                case 0x9e:
+                case 0x9f:
                     return hexdump(bytes, start);
 
-                case 0b10100:
-                case 0b10101:
-                case 0b10110:
-                case 0b10111:
+                case 0xa0:
+                case 0xa1:
+                case 0xa2:
+                case 0xa3:
+                case 0xa4:
+                case 0xa5:
+                case 0xa6:
+                case 0xa7:
+                case 0xa8:
+                case 0xa9:
+                case 0xaa:
+                case 0xab:
+                case 0xac:
+                case 0xad:
+                case 0xae:
+                case 0xaf:
 
-                case 0b11111:
+                case 0xb0:
+                case 0xb1:
+                case 0xb2:
+                case 0xb3:
+                case 0xb4:
+                case 0xb5:
+                case 0xb6:
+                case 0xb7:
+                case 0xb8:
+                case 0xb9:
+                case 0xba:
+                case 0xbb:
+                case 0xbc:
+                case 0xbd:
+                case 0xbe:
+                case 0xbf:
+
+                case 0xc0:
+                case 0xc1:
+
+                case 0xf5:
+                case 0xf6:
+                case 0xf7:
+                case 0xf8:
+                case 0xf9:
+                case 0xfa:
+                case 0xfb:
+                case 0xfc:
+                case 0xfd:
+                case 0xfe:
+                case 0xff:
                     return latin1_binary(bytes, start);
 
-                case 0b11110:
+                case 0xf0:
+                case 0xf1:
+                case 0xf2:
+                case 0xf3:
+                case 0xf4:
                     // quadruplets
-                    if (i + 1 >= bytes.length || (bytes[++i] & 0b11000000) != 0b10000000)
+                    if (i + 1 >= bytes.length || (bytes[++i] & 0xc0) != 0x80)
                         return latin1_binary(bytes, start);
                     // intentional case fallthrough
-                case 0b11100:
-                case 0b11101:
+                case 0xe0:
+                case 0xe1:
+                case 0xe2:
+                case 0xe3:
+                case 0xe4:
+                case 0xe5:
+                case 0xe6:
+                case 0xe7:
+                case 0xe8:
+                case 0xe9:
+                case 0xea:
+                case 0xeb:
+                case 0xec:
+                case 0xed:
+                case 0xee:
+                case 0xef:
                     // triplets
-                    if (i + 1 >= bytes.length || (bytes[++i] & 0b11000000) != 0b10000000)
+                    if (i + 1 >= bytes.length || (bytes[++i] & 0xc0) != 0x80)
                         return latin1_binary(bytes, start);
                     // intentional case fallthrough
-                case 0b11000:
-                case 0b11001:
-                case 0b11010:
-                case 0b11011:
+                case 0xc2:
+                case 0xc3:
+                case 0xc4:
+                case 0xc5:
+                case 0xc6:
+                case 0xc7:
+                case 0xc8:
+                case 0xc9:
+                case 0xca:
+                case 0xcb:
+                case 0xcc:
+                case 0xcd:
+                case 0xce:
+                case 0xcf:
+
+                case 0xd0:
+                case 0xd1:
+                case 0xd2:
+                case 0xd3:
+                case 0xd4:
+                case 0xd5:
+                case 0xd6:
+                case 0xd7:
+                case 0xd8:
+                case 0xd9:
+                case 0xda:
+                case 0xdb:
+                case 0xdc:
+                case 0xdd:
+                case 0xde:
+                case 0xdf:
                     // pairs
-                    if (i + 1 >= bytes.length || (bytes[++i] & 0b11000000) != 0b10000000)
+                    if (i + 1 >= bytes.length || (bytes[++i] & 0xc0) != 0x80)
                         return latin1_binary(bytes, start);
             }
         }
         return new String(bytes, start, bytes.length - start, StandardCharsets.UTF_8);
     }
-
-    private static final int RETURN_NEWLINE_TAB = 1 << '\r' | 1 << '\n' | 1 << '\t';
 
     private static String latin1_binary(byte[] bytes, int start) {
         for (int i = start; i < bytes.length; ++i) {
@@ -73,7 +215,7 @@ public class Unicode {
         return ((valid[outer] >>> inner) & 1) != 0;
     }
 
-    private static final int[] LATIN1 = {RETURN_NEWLINE_TAB, -1, -1, 0x7fffffff, 0, -1, -1, -1};
+    private static final int[] LATIN1 = {1 << '\r' | 1 << '\n' | 1 << '\t', -1, -1, 0x7fffffff, 0, -1, -1, -1};
 
     private static String hexdump(byte[] bytes, int start) {
         int i = start;
