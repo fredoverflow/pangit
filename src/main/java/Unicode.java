@@ -251,6 +251,12 @@ public class Unicode {
                     break;
             }
         }
+        if (start + 2 < bytes.length &&
+                bytes[start] == -17 &&
+                bytes[start + 1] == -69 &&
+                bytes[start + 2] == -65) {
+            start += 3; // https://en.wikipedia.org/wiki/Byte_order_mark#UTF-8
+        }
         return new String(bytes, start, bytes.length - start, StandardCharsets.UTF_8);
     }
 
