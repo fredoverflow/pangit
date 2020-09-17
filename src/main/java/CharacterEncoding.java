@@ -1,7 +1,19 @@
 import java.nio.charset.StandardCharsets;
 
 public enum CharacterEncoding {
-    UTF8 {
+    UTF16BigEndian {
+        @Override
+        public String decode(byte[] bytes, int start) {
+            start += 2;
+            return new String(bytes, start, bytes.length - start, StandardCharsets.UTF_16BE);
+        }
+    }, UTF16LittleEndian {
+        @Override
+        public String decode(byte[] bytes, int start) {
+            start += 2;
+            return new String(bytes, start, bytes.length - start, StandardCharsets.UTF_16LE);
+        }
+    }, UTF8 {
         @Override
         public String decode(byte[] bytes, int start) {
             // https://en.wikipedia.org/wiki/Byte_order_mark#UTF-8
@@ -28,10 +40,45 @@ public enum CharacterEncoding {
     public abstract String decode(byte[] bytes, int start);
 
     public static CharacterEncoding guess(byte[] bytes, int start) {
+        if (positiveEvenSize(bytes, start)) {
+            // https://en.wikipedia.org/wiki/Byte_order_mark#UTF-16
+            switch (byteOrderMark16(bytes, start)) {
+                case 0xFEFF:
+                    return utf16_latin1_binary(bytes, start + 2, 0, UTF16BigEndian);
+                case 0xFFFE:
+                    return utf16_latin1_binary(bytes, start + 2, 1, UTF16LittleEndian);
+            }
+        }
         // https://en.wikipedia.org/wiki/UTF-8#Encoding
         // https://en.wikipedia.org/wiki/ISO/IEC_8859-1#Code_page_layout
         return utf8_latin1_binary(bytes, start);
     }
+
+    private static boolean positiveEvenSize(byte[] bytes, int start) {
+        return start < bytes.length && (start & 1) == (bytes.length & 1);
+    }
+
+    private static int byteOrderMark16(byte[] bytes, int start) {
+        return (bytes[start] & 0xFF) << 8 | (bytes[start + 1] & 0xFF);
+    }
+
+    private static CharacterEncoding utf16_latin1_binary(byte[] bytes, int start, int bigOffset, CharacterEncoding utf16) {
+        for (int i = start + bigOffset; i < bytes.length; i += 2) {
+            switch (bytes[i] & SURROGATE_HALF) {
+                case LOW_SURROGATE:
+                    return latin1_binary(bytes, start);
+                case HIGH_SURROGATE:
+                    i += 2;
+                    if (i >= bytes.length || (bytes[i] & SURROGATE_HALF) != LOW_SURROGATE)
+                        return latin1_binary(bytes, start);
+            }
+        }
+        return utf16;
+    }
+
+    private static final int SURROGATE_HALF = 0xFC;
+    private static final int HIGH_SURROGATE = 0xD8;
+    private static final int LOW_SURROGATE = 0xDC;
 
     private static CharacterEncoding utf8_latin1_binary(byte[] bytes, int start) {
         for (int i = start; i < bytes.length; ++i) {
