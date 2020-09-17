@@ -7,6 +7,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.zip.InflaterInputStream;
@@ -28,11 +29,12 @@ public class GitBlob implements Comparable<GitBlob> {
         this.payloadSize = payloadSize;
     }
 
-    public static Stream<GitBlob> findGitBlobs(Path root) throws IOException {
+    public static Stream<GitBlob> findGitBlobs(Path root, Consumer<GitBlob> processGitBlob) throws IOException {
         return Files.walk(root)
                 .filter(GitBlob::isGitObject)
                 .map(GitBlob::gitBlobOrNull)
                 .filter(Objects::nonNull)
+                .peek(processGitBlob)
                 .sorted();
     }
 

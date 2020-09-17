@@ -1,9 +1,7 @@
 import javax.swing.*;
 import javax.swing.text.DefaultCaret;
 import java.awt.*;
-import java.io.File;
 import java.io.IOException;
-import java.util.stream.Stream;
 
 import static javax.swing.ScrollPaneConstants.*;
 
@@ -26,15 +24,7 @@ public class Main {
         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         int chosenOption = chooser.showOpenDialog(null);
         if (chosenOption == JFileChooser.APPROVE_OPTION) {
-            onDirectorySelected(chooser.getSelectedFile());
-        }
-    }
-
-    private static void onDirectorySelected(File selectedFile) {
-        try (Stream<GitBlob> gitBlobs = GitBlob.findGitBlobs(selectedFile.toPath())) {
-            createUi(gitBlobs.toArray(GitBlob[]::new));
-        } catch (IOException ex) {
-            ex.printStackTrace();
+            BackgroundScanner.scan(chooser.getSelectedFile(), Main::createUi);
         }
     }
 
