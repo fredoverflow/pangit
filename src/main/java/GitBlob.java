@@ -19,6 +19,7 @@ public class GitBlob implements Comparable<GitBlob> {
     public final Path path;
     public final int payloadStart;
     public final int payloadSize;
+    private CharacterEncoding characterEncoding;
 
     private GitBlob(Path path, int payloadStart, int payloadSize) {
         this.lastModified = path.toFile().lastModified();
@@ -85,7 +86,11 @@ public class GitBlob implements Comparable<GitBlob> {
     }
 
     public String payload() throws IOException {
-        return Unicode.decodeHeuristically(unzip(), payloadStart);
+        byte[] unzipped = unzip();
+        if (characterEncoding == null) {
+            characterEncoding = CharacterEncoding.guess(unzipped, payloadStart);
+        }
+        return characterEncoding.decode(unzipped, payloadStart);
     }
 
     @Override
