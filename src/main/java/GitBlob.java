@@ -104,6 +104,6 @@ public class GitBlob implements Comparable<GitBlob> {
     @Override
     public String toString() {
         // JList displays toString representation
-        return dateFormat.format(new Date(lastModified));
+        return dateFormat.format(new Date(lastModified)) + "   " + payloadSize;
     }
 }
