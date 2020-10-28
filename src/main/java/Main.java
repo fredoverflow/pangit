@@ -1,6 +1,7 @@
 import javax.swing.*;
 import javax.swing.text.DefaultCaret;
 import java.awt.*;
+import java.awt.event.InputEvent;
 import java.io.IOException;
 
 import static javax.swing.ScrollPaneConstants.*;
@@ -55,8 +56,28 @@ public class Main {
             }
         });
 
+        payload.addMouseWheelListener(event -> {
+            if (isControlRespectivelyCommandDown(event)) {
+                Font oldFont = payload.getFont();
+                int oldSize = oldFont.getSize();
+                int newSize = oldSize - event.getWheelRotation();
+                if (newSize > 0) {
+                    Font newFont = oldFont.deriveFont((float) newSize);
+                    payload.setFont(newFont);
+                }
+            } else {
+                payload.getParent().dispatchEvent(event);
+            }
+        });
+
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);
     }
+
+    private static boolean isControlRespectivelyCommandDown(InputEvent event) {
+        return (event.getModifiersEx() & CTRL_RESPECTIVELY_META) != 0;
+    }
+
+    private static final int CTRL_RESPECTIVELY_META = OperatingSystem.isMacintosh ? InputEvent.META_DOWN_MASK : InputEvent.CTRL_DOWN_MASK;
 }
