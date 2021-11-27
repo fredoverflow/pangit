@@ -1,4 +1,5 @@
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 public enum CharacterEncoding {
     UTF16BigEndian {
@@ -33,9 +34,15 @@ public enum CharacterEncoding {
     }, BINARY {
         @Override
         public String decode(byte[] bytes, int start) {
+            final int limit = HEXDUMP_LIMIT + start;
+            if (bytes.length > limit) {
+                bytes = Arrays.copyOf(bytes, limit);
+            }
             return Hexdump.hexdump(bytes, start);
         }
     };
+
+    public static final int HEXDUMP_LIMIT = 1024;
 
     public abstract String decode(byte[] bytes, int start);
 
