@@ -1,4 +1,6 @@
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
 import javax.swing.text.Highlighter;
@@ -26,7 +28,12 @@ public class Main {
     private static final Font FONT_PAYLOAD = new Font("Monospaced", Font.PLAIN, 24);
 
     private static final DefaultHighlightPainter highlightPainter = new DefaultHighlightPainter(Color.CYAN);
-    private static Pattern pattern;
+
+    private static JTextField searchField;
+    private static JCheckBox optionCaseSensitive;
+    private static JCheckBox optionRegex;
+    private static JList<GitBlob> filteredGitBlobs;
+    private static JTextArea payloadArea;
 
     public static void main(String[] args) {
         EventQueue.invokeLater(Main::selectDirectory);
@@ -47,36 +54,39 @@ public class Main {
         JPanel searchPanel = new JPanel();
         searchPanel.setLayout(new BoxLayout(searchPanel, BoxLayout.Y_AXIS));
 
-        JTextField searchField = new JTextField();
+        searchField = new JTextField();
         searchField.setFont(FONT_EXPLORER);
         searchPanel.add(searchField);
 
         JPanel searchOptions = new JPanel();
-        JCheckBox optionCaseSensitive = new JCheckBox("case sensitive");
+        optionCaseSensitive = new JCheckBox("case sensitive");
         optionCaseSensitive.setFont(FONT_EXPLORER);
         searchOptions.add(optionCaseSensitive);
         optionCaseSensitive.addActionListener(event -> {
             searchField.requestFocusInWindow();
+            updateHighlights();
         });
 
-        JCheckBox optionRegex = new JCheckBox("regex");
+        optionRegex = new JCheckBox("regex");
         optionRegex.setFont(FONT_EXPLORER);
         searchOptions.add(optionRegex);
         optionRegex.addActionListener(event -> {
             searchField.requestFocusInWindow();
+            updateHighlights();
         });
+
         searchPanel.add(searchOptions);
         explorerPanel.add(searchPanel, BorderLayout.NORTH);
 
         DefaultListModel<GitBlob> filteredGitBlobsModel = new DefaultListModel<>();
         // filteredGitBlobsModel.addAll(allGitBlobs);
         allGitBlobs.forEach(filteredGitBlobsModel::addElement);
-        JList<GitBlob> filteredGitBlobs = new JList<>(filteredGitBlobsModel);
+        filteredGitBlobs = new JList<>(filteredGitBlobsModel);
         filteredGitBlobs.setFont(FONT_EXPLORER);
         explorerPanel.add(new JScrollPane(filteredGitBlobs, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_NEVER), BorderLayout.CENTER);
         frame.add(explorerPanel, BorderLayout.WEST);
 
-        JTextArea payloadArea = new JTextArea(GETTING_STARTED, ROWS, COLUMNS);
+        payloadArea = new JTextArea(GETTING_STARTED, ROWS, COLUMNS);
         payloadArea.setFont(FONT_PAYLOAD);
         payloadArea.setEditable(false);
         DefaultCaret caret = (DefaultCaret) payloadArea.getCaret();
@@ -87,23 +97,6 @@ public class Main {
             private String lastSearchText;
             private int lastSearchFlags;
 
-            private int searchFlags() {
-                int flags = Pattern.UNICODE_CHARACTER_CLASS;
-                if (!optionCaseSensitive.isSelected()) {
-                    flags |= Pattern.CASE_INSENSITIVE;
-                }
-                if (!optionRegex.isSelected()) {
-                    flags |= Pattern.LITERAL;
-                }
-                return flags;
-            }
-
-            private void searchPanelComponentsSetEnabled(boolean enabled) {
-                searchField.setEnabled(enabled);
-                optionCaseSensitive.setEnabled(enabled);
-                optionRegex.setEnabled(enabled);
-            }
-
             @Override
             public void actionPerformed(ActionEvent event) {
                 String searchText = searchField.getText();
@@ -112,6 +105,7 @@ public class Main {
                     return;
                 }
 
+                Pattern pattern;
                 try {
                     pattern = Pattern.compile(searchText, searchFlags);
                 } catch (PatternSyntaxException ex) {
@@ -124,7 +118,6 @@ public class Main {
                 filteredGitBlobsModel.clear();
 
                 if (searchText.isEmpty()) {
-                    pattern = null;
                     // filteredGitBlobsModel.addAll(allGitBlobs);
                     allGitBlobs.forEach(filteredGitBlobsModel::addElement);
                     return;
@@ -164,6 +157,23 @@ public class Main {
             }
         });
 
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateHighlights();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateHighlights();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updateHighlights();
+            }
+        });
+
         filteredGitBlobs.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         filteredGitBlobs.addListSelectionListener(event -> {
             GitBlob gitBlob = filteredGitBlobs.getSelectedValue();
@@ -171,21 +181,13 @@ public class Main {
                 return;
             }
 
-            frame.setTitle(gitBlob.path.toString());
             try {
                 String payload = gitBlob.payload();
-                payloadArea.setText(payload);
-                if (pattern == null) {
-                    return;
-                }
 
-                Matcher matcher = pattern.matcher(payload);
-                Highlighter highlighter = payloadArea.getHighlighter();
-                highlighter.removeAllHighlights();
-                while (matcher.find()) {
-                    highlighter.addHighlight(matcher.start(), matcher.end(), highlightPainter);
-                }
-            } catch (IOException | BadLocationException ex) {
+                frame.setTitle(gitBlob.path.toString());
+                payloadArea.setText(payload);
+                updateHighlights();
+            } catch (IOException ex) {
                 payloadArea.setText(ex.toString());
             }
         });
@@ -207,6 +209,46 @@ public class Main {
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);
+    }
+
+    private static void updateHighlights() {
+        try {
+            Highlighter highlighter = payloadArea.getHighlighter();
+            highlighter.removeAllHighlights();
+
+            String searchText = searchField.getText();
+            if (searchText.isEmpty()) {
+                return;
+            }
+            int searchFlags = searchFlags();
+
+            Pattern pattern = Pattern.compile(searchText, searchFlags);
+            String payload = payloadArea.getText();
+            Matcher matcher = pattern.matcher(payload);
+            while (matcher.find()) {
+                highlighter.addHighlight(matcher.start(), matcher.end(), highlightPainter);
+            }
+            searchField.setBackground(Color.WHITE);
+        } catch (PatternSyntaxException | BadLocationException ex) {
+            searchField.setBackground(Color.PINK);
+        }
+    }
+
+    private static int searchFlags() {
+        int flags = Pattern.UNICODE_CHARACTER_CLASS;
+        if (!optionCaseSensitive.isSelected()) {
+            flags |= Pattern.CASE_INSENSITIVE;
+        }
+        if (!optionRegex.isSelected()) {
+            flags |= Pattern.LITERAL;
+        }
+        return flags;
+    }
+
+    private static void searchPanelComponentsSetEnabled(boolean enabled) {
+        searchField.setEnabled(enabled);
+        optionCaseSensitive.setEnabled(enabled);
+        optionRegex.setEnabled(enabled);
     }
 
     private static boolean isControlRespectivelyCommandDown(InputEvent event) {
