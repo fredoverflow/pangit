@@ -3,7 +3,6 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
 import javax.swing.text.Highlighter;
 import java.awt.*;
-import java.awt.event.InputEvent;
 import java.io.IOException;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -82,7 +81,7 @@ public class Main {
         });
 
         payloadArea.addMouseWheelListener(event -> {
-            if (isControlRespectivelyCommandDown(event)) {
+            if (Platform.isControlRespectivelyCommandDown(event)) {
                 Font oldFont = payloadArea.getFont();
                 int oldSize = oldFont.getSize();
                 int newSize = oldSize - event.getWheelRotation();
@@ -173,10 +172,4 @@ public class Main {
             }
         }.execute();
     }
-
-    private static boolean isControlRespectivelyCommandDown(InputEvent event) {
-        return (event.getModifiersEx() & CTRL_RESPECTIVELY_META) != 0;
-    }
-
-    private static final int CTRL_RESPECTIVELY_META = Platform.isMacintosh ? InputEvent.META_DOWN_MASK : InputEvent.CTRL_DOWN_MASK;
 }
