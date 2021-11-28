@@ -225,8 +225,11 @@ public class Main {
             Pattern pattern = Pattern.compile(searchText, searchFlags);
             String payload = payloadArea.getText();
             Matcher matcher = pattern.matcher(payload);
-            while (matcher.find()) {
-                highlighter.addHighlight(matcher.start(), matcher.end(), highlightPainter);
+            if (matcher.find()) {
+                payloadArea.getCaret().setDot(matcher.start());
+                do {
+                    highlighter.addHighlight(matcher.start(), matcher.end(), highlightPainter);
+                } while (matcher.find());
             }
             searchField.setBackground(Color.WHITE);
         } catch (PatternSyntaxException | BadLocationException ex) {
