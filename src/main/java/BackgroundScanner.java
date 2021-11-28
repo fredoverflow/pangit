@@ -7,8 +7,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class BackgroundScanner {
-    private static final Font FONT_PROGRESS = new Font("SansSerif", Font.PLAIN, 48);
-
     public static void scan(File selectedDirectory, Consumer<List<GitBlob>> processGitBlobs) {
         JDialog dialog = new JDialog((JDialog) null, "Scanning...", false);
 
@@ -16,7 +14,7 @@ public class BackgroundScanner {
         progressBar.setIndeterminate(true);
         progressBar.setStringPainted(true);
         progressBar.setString("0");
-        progressBar.setFont(FONT_PROGRESS);
+        progressBar.setFont(Fonts.PROGRESS);
         dialog.add(progressBar);
 
         dialog.pack();

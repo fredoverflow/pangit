@@ -24,9 +24,6 @@ public class Main {
     private static final int ROWS = 25;
     private static final int COLUMNS = 80;
 
-    private static final Font FONT_EXPLORER = new Font("SansSerif", Font.PLAIN, 20);
-    private static final Font FONT_PAYLOAD = new Font("Monospaced", Font.PLAIN, 24);
-
     private static final DefaultHighlightPainter highlightPainter = new DefaultHighlightPainter(Color.CYAN);
 
     private static JTextField searchField;
@@ -55,12 +52,12 @@ public class Main {
         searchPanel.setLayout(new BoxLayout(searchPanel, BoxLayout.Y_AXIS));
 
         searchField = new JTextField();
-        searchField.setFont(FONT_EXPLORER);
+        searchField.setFont(Fonts.EXPLORER);
         searchPanel.add(searchField);
 
         JPanel searchOptions = new JPanel();
         optionCaseSensitive = new JCheckBox("case sensitive");
-        optionCaseSensitive.setFont(FONT_EXPLORER);
+        optionCaseSensitive.setFont(Fonts.EXPLORER);
         searchOptions.add(optionCaseSensitive);
         optionCaseSensitive.addActionListener(event -> {
             searchField.requestFocusInWindow();
@@ -68,7 +65,7 @@ public class Main {
         });
 
         optionRegex = new JCheckBox("regex");
-        optionRegex.setFont(FONT_EXPLORER);
+        optionRegex.setFont(Fonts.EXPLORER);
         searchOptions.add(optionRegex);
         optionRegex.addActionListener(event -> {
             searchField.requestFocusInWindow();
@@ -82,12 +79,12 @@ public class Main {
         // filteredGitBlobsModel.addAll(allGitBlobs);
         allGitBlobs.forEach(filteredGitBlobsModel::addElement);
         filteredGitBlobs = new JList<>(filteredGitBlobsModel);
-        filteredGitBlobs.setFont(FONT_EXPLORER);
+        filteredGitBlobs.setFont(Fonts.EXPLORER);
         explorerPanel.add(new JScrollPane(filteredGitBlobs, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_NEVER), BorderLayout.CENTER);
         frame.add(explorerPanel, BorderLayout.WEST);
 
         payloadArea = new JTextArea(GETTING_STARTED, ROWS, COLUMNS);
-        payloadArea.setFont(FONT_PAYLOAD);
+        payloadArea.setFont(Fonts.PAYLOAD);
         payloadArea.setEditable(false);
         DefaultCaret caret = (DefaultCaret) payloadArea.getCaret();
         caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE);
