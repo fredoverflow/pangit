@@ -1,15 +1,19 @@
 import javax.swing.*;
+import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
+import javax.swing.text.Highlighter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.io.IOException;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import static javax.swing.ScrollPaneConstants.*;
+import static javax.swing.text.DefaultHighlighter.DefaultHighlightPainter;
 
 public class Main {
     private static final String GIT_DIRECTORY = System.getProperty("user.home") + "/git";
@@ -20,6 +24,9 @@ public class Main {
 
     private static final Font FONT_EXPLORER = new Font("SansSerif", Font.PLAIN, 20);
     private static final Font FONT_PAYLOAD = new Font("Monospaced", Font.PLAIN, 24);
+
+    private static final DefaultHighlightPainter highlightPainter = new DefaultHighlightPainter(Color.CYAN);
+    private static Pattern pattern;
 
     public static void main(String[] args) {
         EventQueue.invokeLater(Main::selectDirectory);
@@ -105,7 +112,6 @@ public class Main {
                     return;
                 }
 
-                Pattern pattern;
                 try {
                     pattern = Pattern.compile(searchText, searchFlags);
                 } catch (PatternSyntaxException ex) {
@@ -118,6 +124,7 @@ public class Main {
                 filteredGitBlobsModel.clear();
 
                 if (searchText.isEmpty()) {
+                    pattern = null;
                     // filteredGitBlobsModel.addAll(allGitBlobs);
                     allGitBlobs.forEach(filteredGitBlobsModel::addElement);
                     return;
@@ -166,9 +173,20 @@ public class Main {
 
             frame.setTitle(gitBlob.path.toString());
             try {
-                payloadArea.setText(gitBlob.payload());
-            } catch (IOException ex) {
-                payloadArea.setText(ex.getMessage());
+                String payload = gitBlob.payload();
+                payloadArea.setText(payload);
+                if (pattern == null) {
+                    return;
+                }
+
+                Matcher matcher = pattern.matcher(payload);
+                Highlighter highlighter = payloadArea.getHighlighter();
+                highlighter.removeAllHighlights();
+                while (matcher.find()) {
+                    highlighter.addHighlight(matcher.start(), matcher.end(), highlightPainter);
+                }
+            } catch (IOException | BadLocationException ex) {
+                payloadArea.setText(ex.toString());
             }
         });
 
