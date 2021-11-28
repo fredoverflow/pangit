@@ -56,10 +56,6 @@ public class SearchPanel extends JPanel {
         this.add(searchOptions);
     }
 
-    public boolean isEmpty() {
-        return searchField.getText().isEmpty();
-    }
-
     public Pattern compilePattern() throws PatternSyntaxException {
         try {
             Pattern pattern = Pattern.compile(searchField.getText(), searchFlags());

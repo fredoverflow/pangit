@@ -1,31 +1,20 @@
 import javax.swing.*;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.DefaultCaret;
-import javax.swing.text.Highlighter;
 import java.awt.*;
 import java.io.IOException;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import static javax.swing.ScrollPaneConstants.*;
-import static javax.swing.text.DefaultHighlighter.DefaultHighlightPainter;
 
 public class Main {
     private static final String GIT_DIRECTORY = System.getProperty("user.home") + "/git";
-
-    private static final String GETTING_STARTED = "Please select a blob on the left!";
-    private static final int ROWS = 25;
-    private static final int COLUMNS = 80;
-
-    private static final DefaultHighlightPainter highlightPainter = new DefaultHighlightPainter(Color.CYAN);
 
     private static SearchPanel searchPanel;
     private static List<GitBlob> allGitBlobs;
     private static DefaultListModel<GitBlob> filteredGitBlobsModel;
     private static JList<GitBlob> filteredGitBlobs;
-    private static JTextArea payloadArea;
+    private static PayloadArea payloadArea;
 
     public static void main(String[] args) {
         EventQueue.invokeLater(Main::selectDirectory);
@@ -55,11 +44,7 @@ public class Main {
         explorerPanel.add(new JScrollPane(filteredGitBlobs, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_NEVER), BorderLayout.CENTER);
         frame.add(explorerPanel, BorderLayout.WEST);
 
-        payloadArea = new JTextArea(GETTING_STARTED, ROWS, COLUMNS);
-        payloadArea.setFont(Fonts.PAYLOAD);
-        payloadArea.setEditable(false);
-        DefaultCaret caret = (DefaultCaret) payloadArea.getCaret();
-        caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE);
+        payloadArea = new PayloadArea();
         frame.add(new JScrollPane(payloadArea, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.CENTER);
 
         filteredGitBlobs.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -80,20 +65,6 @@ public class Main {
             }
         });
 
-        payloadArea.addMouseWheelListener(event -> {
-            if (Platform.isControlRespectivelyCommandDown(event)) {
-                Font oldFont = payloadArea.getFont();
-                int oldSize = oldFont.getSize();
-                int newSize = oldSize - event.getWheelRotation();
-                if (newSize > 0) {
-                    Font newFont = oldFont.deriveFont((float) newSize);
-                    payloadArea.setFont(newFont);
-                }
-            } else {
-                payloadArea.getParent().dispatchEvent(event);
-            }
-        });
-
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);
@@ -101,25 +72,8 @@ public class Main {
 
     private static void updateHighlights() {
         try {
-            Highlighter highlighter = payloadArea.getHighlighter();
-            highlighter.removeAllHighlights();
-
-            if (searchPanel.isEmpty()) {
-                return;
-            }
-
-            Pattern pattern = searchPanel.compilePattern();
-            String payload = payloadArea.getText();
-            Matcher matcher = pattern.matcher(payload);
-            if (matcher.find()) {
-                payloadArea.getCaret().setDot(matcher.start());
-                do {
-                    highlighter.addHighlight(matcher.start(), matcher.end(), highlightPainter);
-                } while (matcher.find());
-            }
+            payloadArea.updateHighlights(searchPanel.compilePattern());
         } catch (PatternSyntaxException ignored) {
-        } catch (BadLocationException bug) {
-            throw new RuntimeException(bug);
         }
     }
 
@@ -134,7 +88,7 @@ public class Main {
 
         filteredGitBlobsModel.clear();
 
-        if (searchPanel.isEmpty()) {
+        if (pattern.pattern().isEmpty()) {
             // filteredGitBlobsModel.addAll(allGitBlobs);
             allGitBlobs.forEach(filteredGitBlobsModel::addElement);
             return;
