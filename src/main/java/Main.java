@@ -1,12 +1,8 @@
 import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
 import javax.swing.text.Highlighter;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.io.IOException;
 import java.util.List;
@@ -26,9 +22,9 @@ public class Main {
 
     private static final DefaultHighlightPainter highlightPainter = new DefaultHighlightPainter(Color.CYAN);
 
-    private static JTextField searchField;
-    private static JCheckBox optionCaseSensitive;
-    private static JCheckBox optionRegex;
+    private static SearchPanel searchPanel;
+    private static List<GitBlob> allGitBlobs;
+    private static DefaultListModel<GitBlob> filteredGitBlobsModel;
     private static JList<GitBlob> filteredGitBlobs;
     private static JTextArea payloadArea;
 
@@ -45,37 +41,14 @@ public class Main {
         }
     }
 
-    private static void createUi(List<GitBlob> allGitBlobs) {
+    private static void createUi(List<GitBlob> gitBlobs) {
         JFrame frame = new JFrame("Pangit");
         JPanel explorerPanel = new JPanel(new BorderLayout());
-        JPanel searchPanel = new JPanel();
-        searchPanel.setLayout(new BoxLayout(searchPanel, BoxLayout.Y_AXIS));
-
-        searchField = new JTextField();
-        searchField.setFont(Fonts.EXPLORER);
-        searchPanel.add(searchField);
-
-        JPanel searchOptions = new JPanel();
-        optionCaseSensitive = new JCheckBox("case sensitive");
-        optionCaseSensitive.setFont(Fonts.EXPLORER);
-        searchOptions.add(optionCaseSensitive);
-        optionCaseSensitive.addActionListener(event -> {
-            searchField.requestFocusInWindow();
-            updateHighlights();
-        });
-
-        optionRegex = new JCheckBox("regex");
-        optionRegex.setFont(Fonts.EXPLORER);
-        searchOptions.add(optionRegex);
-        optionRegex.addActionListener(event -> {
-            searchField.requestFocusInWindow();
-            updateHighlights();
-        });
-
-        searchPanel.add(searchOptions);
+        searchPanel = new SearchPanel(Main::updateHighlights, Main::filterGitBlobs);
         explorerPanel.add(searchPanel, BorderLayout.NORTH);
 
-        DefaultListModel<GitBlob> filteredGitBlobsModel = new DefaultListModel<>();
+        allGitBlobs = gitBlobs;
+        filteredGitBlobsModel = new DefaultListModel<>();
         // filteredGitBlobsModel.addAll(allGitBlobs);
         allGitBlobs.forEach(filteredGitBlobsModel::addElement);
         filteredGitBlobs = new JList<>(filteredGitBlobsModel);
@@ -89,87 +62,6 @@ public class Main {
         DefaultCaret caret = (DefaultCaret) payloadArea.getCaret();
         caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE);
         frame.add(new JScrollPane(payloadArea, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.CENTER);
-
-        searchField.addActionListener(new ActionListener() {
-            private String lastSearchText;
-            private int lastSearchFlags;
-
-            @Override
-            public void actionPerformed(ActionEvent event) {
-                String searchText = searchField.getText();
-                int searchFlags = searchFlags();
-                if (searchText.equals(lastSearchText) && searchFlags == lastSearchFlags) {
-                    return;
-                }
-
-                Pattern pattern;
-                try {
-                    pattern = Pattern.compile(searchText, searchFlags);
-                } catch (PatternSyntaxException ex) {
-                    payloadArea.setText(ex.getMessage());
-                    return;
-                }
-
-                lastSearchText = searchText;
-                lastSearchFlags = searchFlags;
-                filteredGitBlobsModel.clear();
-
-                if (searchText.isEmpty()) {
-                    // filteredGitBlobsModel.addAll(allGitBlobs);
-                    allGitBlobs.forEach(filteredGitBlobsModel::addElement);
-                    return;
-                }
-
-                searchPanelComponentsSetEnabled(false);
-
-                new SwingWorker<Void, GitBlob>() {
-                    @Override
-                    protected Void doInBackground() {
-                        for (GitBlob gitBlob : allGitBlobs) {
-                            try {
-                                if (pattern.matcher(gitBlob.payload()).find()) {
-                                    publish(gitBlob);
-                                }
-                            } catch (IOException ex) {
-                                EventQueue.invokeLater(() -> {
-                                    payloadArea.setText(ex.getMessage());
-                                });
-                            }
-                        }
-                        return null;
-                    }
-
-                    @Override
-                    protected void process(List<GitBlob> matchingGitBlobs) {
-                        // filteredGitBlobsModel.addAll(matchingGitBlobs);
-                        matchingGitBlobs.forEach(filteredGitBlobsModel::addElement);
-                    }
-
-                    @Override
-                    protected void done() {
-                        searchPanelComponentsSetEnabled(true);
-                        searchField.requestFocusInWindow();
-                    }
-                }.execute();
-            }
-        });
-
-        searchField.getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                updateHighlights();
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                updateHighlights();
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                updateHighlights();
-            }
-        });
 
         filteredGitBlobs.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         filteredGitBlobs.addListSelectionListener(event -> {
@@ -213,13 +105,11 @@ public class Main {
             Highlighter highlighter = payloadArea.getHighlighter();
             highlighter.removeAllHighlights();
 
-            String searchText = searchField.getText();
-            if (searchText.isEmpty()) {
+            if (searchPanel.isEmpty()) {
                 return;
             }
-            int searchFlags = searchFlags();
 
-            Pattern pattern = Pattern.compile(searchText, searchFlags);
+            Pattern pattern = searchPanel.compilePattern();
             String payload = payloadArea.getText();
             Matcher matcher = pattern.matcher(payload);
             if (matcher.find()) {
@@ -228,27 +118,60 @@ public class Main {
                     highlighter.addHighlight(matcher.start(), matcher.end(), highlightPainter);
                 } while (matcher.find());
             }
-            searchField.setBackground(Color.WHITE);
-        } catch (PatternSyntaxException | BadLocationException ex) {
-            searchField.setBackground(Color.PINK);
+        } catch (PatternSyntaxException ignored) {
+        } catch (BadLocationException bug) {
+            throw new RuntimeException(bug);
         }
     }
 
-    private static int searchFlags() {
-        int flags = Pattern.UNICODE_CHARACTER_CLASS;
-        if (!optionCaseSensitive.isSelected()) {
-            flags |= Pattern.CASE_INSENSITIVE;
+    private static void filterGitBlobs() {
+        Pattern pattern;
+        try {
+            pattern = searchPanel.compilePattern();
+        } catch (PatternSyntaxException ex) {
+            payloadArea.setText(ex.getMessage());
+            return;
         }
-        if (!optionRegex.isSelected()) {
-            flags |= Pattern.LITERAL;
-        }
-        return flags;
-    }
 
-    private static void searchPanelComponentsSetEnabled(boolean enabled) {
-        searchField.setEnabled(enabled);
-        optionCaseSensitive.setEnabled(enabled);
-        optionRegex.setEnabled(enabled);
+        filteredGitBlobsModel.clear();
+
+        if (searchPanel.isEmpty()) {
+            // filteredGitBlobsModel.addAll(allGitBlobs);
+            allGitBlobs.forEach(filteredGitBlobsModel::addElement);
+            return;
+        }
+
+        searchPanel.setEnabled(false);
+
+        new SwingWorker<Void, GitBlob>() {
+            @Override
+            protected Void doInBackground() {
+                for (GitBlob gitBlob : allGitBlobs) {
+                    try {
+                        if (pattern.matcher(gitBlob.payload()).find()) {
+                            publish(gitBlob);
+                        }
+                    } catch (IOException ex) {
+                        EventQueue.invokeLater(() -> {
+                            payloadArea.setText(ex.getMessage());
+                        });
+                    }
+                }
+                return null;
+            }
+
+            @Override
+            protected void process(List<GitBlob> matchingGitBlobs) {
+                // filteredGitBlobsModel.addAll(matchingGitBlobs);
+                matchingGitBlobs.forEach(filteredGitBlobsModel::addElement);
+            }
+
+            @Override
+            protected void done() {
+                searchPanel.setEnabled(true);
+                searchPanel.requestFocusInWindow();
+            }
+        }.execute();
     }
 
     private static boolean isControlRespectivelyCommandDown(InputEvent event) {
