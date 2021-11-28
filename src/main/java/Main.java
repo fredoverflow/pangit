@@ -178,5 +178,5 @@ public class Main {
         return (event.getModifiersEx() & CTRL_RESPECTIVELY_META) != 0;
     }
 
-    private static final int CTRL_RESPECTIVELY_META = OperatingSystem.isMacintosh ? InputEvent.META_DOWN_MASK : InputEvent.CTRL_DOWN_MASK;
+    private static final int CTRL_RESPECTIVELY_META = Platform.isMacintosh ? InputEvent.META_DOWN_MASK : InputEvent.CTRL_DOWN_MASK;
 }
