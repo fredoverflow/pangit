@@ -2,6 +2,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -64,14 +66,27 @@ public class Main {
     }
 
     private static void onGitBlobSelected(GitBlob gitBlob) {
-        try {
-            payloadArea.setText(gitBlob.payload());
-            frame.setTitle(gitBlob.path.toString());
-            updateHighlights();
-        } catch (IOException ex) {
-            payloadArea.setText(ex.toString());
-        }
+        // JTextArea.setText is a UX bottleneck on large blobs when executed in the UI thread.
+        // (In particular, selecting a blob did not immediately highlight it as selected,
+        // and the user was left uncertain for a short period whether they actually selected it.)
+        // Fortunately, JTextArea.setText uses PlainDocument.replace, which is thread-safe.
+        gitBlobExecutor.execute(() -> {
+            try {
+                payloadArea.setText(gitBlob.payload());
+                EventQueue.invokeLater(() -> {
+                    frame.setTitle(gitBlob.path.toString());
+                    updateHighlights();
+                });
+            } catch (IOException ex) {
+                payloadArea.setText(ex.toString());
+            }
+        });
     }
+
+    // Selecting a large blob and immediately selecting a small blob thereafter
+    // could display the outdated large blob instead of the actually selected small blob.
+    // SingleThreadExecutor stalls the small blob until the large blob is displayed.
+    private static final Executor gitBlobExecutor = Executors.newSingleThreadExecutor();
 
     private static void updateHighlights() {
         try {
@@ -108,9 +123,7 @@ public class Main {
                             publish(gitBlob);
                         }
                     } catch (IOException ex) {
-                        EventQueue.invokeLater(() -> {
-                            payloadArea.setText(ex.getMessage());
-                        });
+                        payloadArea.setText(ex.getMessage());
                     }
                 }
                 return null;
