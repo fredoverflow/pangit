@@ -10,6 +10,7 @@ import static javax.swing.ScrollPaneConstants.*;
 public class Main {
     private static final String GIT_DIRECTORY = System.getProperty("user.home") + "/git";
 
+    private static JFrame frame;
     private static SearchPanel searchPanel;
     private static List<GitBlob> allGitBlobs;
     private static DefaultListModel<GitBlob> filteredGitBlobsModel;
@@ -30,7 +31,7 @@ public class Main {
     }
 
     private static void createUi(List<GitBlob> gitBlobs) {
-        JFrame frame = new JFrame("Pangit");
+        frame = new JFrame("Pangit");
         JPanel explorerPanel = new JPanel(new BorderLayout());
         searchPanel = new SearchPanel(Main::updateHighlights, Main::filterGitBlobs);
         explorerPanel.add(searchPanel, BorderLayout.NORTH);
@@ -49,25 +50,27 @@ public class Main {
 
         filteredGitBlobs.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         filteredGitBlobs.addListSelectionListener(event -> {
-            GitBlob gitBlob = filteredGitBlobs.getSelectedValue();
-            if (event.getValueIsAdjusting() || gitBlob == null) {
-                return;
-            }
-
-            try {
-                String payload = gitBlob.payload();
-
-                frame.setTitle(gitBlob.path.toString());
-                payloadArea.setText(payload);
-                updateHighlights();
-            } catch (IOException ex) {
-                payloadArea.setText(ex.toString());
+            if (!event.getValueIsAdjusting()) {
+                GitBlob gitBlob = filteredGitBlobs.getSelectedValue();
+                if (gitBlob != null) {
+                    onGitBlobSelected(gitBlob);
+                }
             }
         });
 
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);
+    }
+
+    private static void onGitBlobSelected(GitBlob gitBlob) {
+        try {
+            payloadArea.setText(gitBlob.payload());
+            frame.setTitle(gitBlob.path.toString());
+            updateHighlights();
+        } catch (IOException ex) {
+            payloadArea.setText(ex.toString());
+        }
     }
 
     private static void updateHighlights() {
