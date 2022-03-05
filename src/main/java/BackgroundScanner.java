@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class BackgroundScanner {
-    public static void scan(File selectedDirectory, Consumer<List<GitBlob>> processGitBlobs) {
+    public static void scan(File selectedDirectory, Consumer<List<GitBlob>> gitBlobsConsumer) {
         JDialog dialog = new JDialog((JDialog) null, "Scanning...", false);
 
         JProgressBar progressBar = new JProgressBar();
@@ -40,7 +40,7 @@ public class BackgroundScanner {
             protected void done() {
                 dialog.dispose();
                 try {
-                    processGitBlobs.accept(get());
+                    gitBlobsConsumer.accept(get());
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(null,
                             ex.getMessage(),

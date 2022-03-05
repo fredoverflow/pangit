@@ -29,12 +29,12 @@ public class GitBlob implements Comparable<GitBlob> {
         this.payloadSize = payloadSize;
     }
 
-    public static Stream<GitBlob> findGitBlobs(Path root, Consumer<GitBlob> processGitBlob) throws IOException {
+    public static Stream<GitBlob> findGitBlobs(Path root, Consumer<GitBlob> gitBlobConsumer) throws IOException {
         return Files.walk(root)
                 .filter(GitBlob::isGitObject)
                 .map(GitBlob::gitBlobOrNull)
                 .filter(Objects::nonNull)
-                .peek(processGitBlob)
+                .peek(gitBlobConsumer)
                 .sorted();
     }
 
