@@ -40,8 +40,7 @@ public class Main {
 
         allGitBlobs = gitBlobs;
         filteredGitBlobsModel = new DefaultListModel<>();
-        // filteredGitBlobsModel.addAll(allGitBlobs);
-        allGitBlobs.forEach(filteredGitBlobsModel::addElement);
+        filteredGitBlobsModel.addAll(allGitBlobs);
         filteredGitBlobs = new JList<>(filteredGitBlobsModel);
         filteredGitBlobs.setFont(Fonts.EXPLORER);
         explorerPanel.add(new JScrollPane(filteredGitBlobs, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_NEVER), BorderLayout.CENTER);
@@ -107,8 +106,7 @@ public class Main {
         filteredGitBlobsModel.clear();
 
         if (pattern.pattern().isEmpty()) {
-            // filteredGitBlobsModel.addAll(allGitBlobs);
-            allGitBlobs.forEach(filteredGitBlobsModel::addElement);
+            filteredGitBlobsModel.addAll(allGitBlobs);
             return;
         }
 
@@ -131,8 +129,7 @@ public class Main {
 
             @Override
             protected void process(List<GitBlob> matchingGitBlobs) {
-                // filteredGitBlobsModel.addAll(matchingGitBlobs);
-                matchingGitBlobs.forEach(filteredGitBlobsModel::addElement);
+                filteredGitBlobsModel.addAll(matchingGitBlobs);
             }
 
             @Override
